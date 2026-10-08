@@ -148,178 +148,95 @@ document.addEventListener("DOMContentLoaded", () => {
        5. FORMULÁRIO - FORMSPREE
        ========================================================================== */
 
-    const contactForm =
-        document.getElementById("contact-form");
+const contactForm = document.getElementById("contact-form");
+const customModal = document.getElementById("custom-modal");
+const closeModalBtn = document.getElementById("modal-close");
 
-    const customModal =
-        document.getElementById("custom-modal");
+if (contactForm) {
 
-    const closeModalBtn =
-        document.getElementById("modal-close");
+    contactForm.addEventListener("submit", async (e) => {
 
+        e.preventDefault();
 
-    if (contactForm) {
+        const submitButton =
+            contactForm.querySelector('button[type="submit"]');
 
-        contactForm.addEventListener("submit", async (event) => {
+        const originalText = submitButton.innerHTML;
 
-            event.preventDefault();
+        submitButton.disabled = true;
+        submitButton.innerHTML = "Enviando...";
 
+        try {
 
-            /* ------------------------------------------------------------------
-               PEGA O ENDPOINT DO FORMSPREE
-               ------------------------------------------------------------------ */
+            const response = await fetch(contactForm.action, {
+                method: "POST",
+                body: new FormData(contactForm),
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
 
-            const formAction = contactForm.action;
+            if (response.ok) {
 
-            if (!formAction ||
-                !formAction.includes("formspree.io")) {
+                contactForm.reset();
 
-                alert(
-                    "Erro: o formulário não está configurado com um endereço válido do Formspree."
-                );
+                if (customModal) {
+                    customModal.classList.remove("hidden");
+                }
 
-                console.error(
-                    "Action encontrada:",
-                    formAction
-                );
+            } else {
 
-                return;
-            }
+                const data = await response.json();
 
+                console.error("Erro do Formspree:", data);
 
-            /* ------------------------------------------------------------------
-               BOTÃO
-               ------------------------------------------------------------------ */
+                if (data.errors) {
 
-            const submitButton =
-                contactForm.querySelector('button[type="submit"]');
-
-            const originalButtonText =
-                submitButton ? submitButton.innerHTML : "Enviar";
-
-
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = "Enviando...";
-            }
-
-
-            /* ------------------------------------------------------------------
-               DADOS DO FORMULÁRIO
-               ------------------------------------------------------------------ */
-
-            const formData =
-                new FormData(contactForm);
-
-
-            try {
-
-                /* --------------------------------------------------------------
-                   ENVIA PARA O FORMSPREE
-                   -------------------------------------------------------------- */
-
-                const response = await fetch(formAction, {
-                    method: "POST",
-                    body: formData,
-                    headers: {
-                        "Accept": "application/json"
-                    }
-                });
-
-
-                /* --------------------------------------------------------------
-                   SUCESSO
-                   -------------------------------------------------------------- */
-
-                if (response.ok) {
-
-                    console.log(
-                        "Mensagem enviada com sucesso para o Formspree."
+                    alert(
+                        data.errors
+                            .map(error => error.message)
+                            .join("\n")
                     );
 
+                } else {
 
-                    // Limpa o formulário
-                    contactForm.reset();
-
-
-                    // Mostra o modal
-                    if (customModal) {
-                        customModal.classList.remove("hidden");
-                    }
-
-                }
-
-                /* --------------------------------------------------------------
-                   ERRO DO FORMSPREE
-                   -------------------------------------------------------------- */
-
-                else {
-
-                    let errorMessage =
-                        "Não foi possível enviar sua mensagem.";
-
-                    try {
-
-                        const data =
-                            await response.json();
-
-                        console.error(
-                            "Resposta do Formspree:",
-                            data
-                        );
-
-
-                        if (data.errors &&
-                            Array.isArray(data.errors)) {
-
-                            errorMessage =
-                                data.errors
-                                    .map(error => error.message)
-                                    .join("\n");
-                        }
-
-                    }
-
-                    catch (jsonError) {
-
-                        console.error(
-                            "Não foi possível ler a resposta do Formspree.",
-                            jsonError
-                        );
-                    }
-
-
-                    alert(errorMessage);
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "Erro ao conectar com o Formspree:",
-                    error
-                );
-
-
-                alert(
-                    "Não foi possível enviar a mensagem. Verifique sua conexão com a internet e tente novamente."
-                );
-            }
-
-
-            finally {
-
-                if (submitButton) {
-
-                    submitButton.disabled = false;
-                    submitButton.innerHTML =
-                        originalButtonText;
+                    alert(
+                        "Não foi possível enviar sua mensagem."
+                    );
                 }
             }
 
-        });
-    }
+        } catch (error) {
+
+            console.error("Erro:", error);
+
+            alert(
+                "Erro ao enviar a mensagem. Verifique sua conexão e tente novamente."
+            );
+
+        } finally {
+
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
+        }
+    });
+}
+
+
+if (closeModalBtn && customModal) {
+
+    closeModalBtn.addEventListener("click", () => {
+        customModal.classList.add("hidden");
+    });
+
+    window.addEventListener("click", (e) => {
+
+        if (e.target === customModal) {
+            customModal.classList.add("hidden");
+        }
+
+    });
+}
 
 
     /* ==========================================================================
